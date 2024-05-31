@@ -1,0 +1,17 @@
+version: "3.4"
+
+services:
+  postgres:
+    container_name: unigram-db
+    image: postgres
+    ports:
+      - 5431:5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: akshats911
+      POSTGRES_PASSWORD: Tacmpp@123
+      POSTGRES_DB: users
+
+volumes:
+  postgres_data:
