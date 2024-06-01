@@ -23,3 +23,10 @@ model User {
   salt            String
   @@map("user_info")
 }
+
+model Chats {
+  id              String @id @default(uuid())
+  cname           String @map("chat_name")
+  createdAt       String  
+  @@map("chats")
+}
