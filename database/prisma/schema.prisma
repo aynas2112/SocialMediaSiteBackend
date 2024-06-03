@@ -17,10 +17,15 @@ model User {
   id              String @id @default(uuid())
   fname           String @map("first_name")
   lname           String @map("last_name")
+  username        String
   email           String @unique
   password        String
   profileImageUrl String? @map("profile_image_url")
   salt            String
+  bio             String
+  nposts          String @map("no_of_posts")
+  followers      String @map("followers")
+  following      String @map("following")
   @@map("user_info")
 }
 

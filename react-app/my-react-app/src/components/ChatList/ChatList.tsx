@@ -1,20 +1,35 @@
 import ChatItem from "./ChatItem";
-import { List } from '@mui/material';
-
+import { List } from "@mui/material";
+import { gql, useQuery } from "@apollo/client";
+const query = gql`
+  query getChats {
+    getChats {
+      id
+      cname
+      createdAt
+    }
+  }
+`;
 interface Chat {
   id: string;
   name: string;
-  lastMessage: string;
-  timestamp: number;
+  timestamp: string;
 }
 
-function ChatList({ chats }: { chats: Chat[] }) {
+function ChatList() {
+  const { data, loading } = useQuery(query);
+  if (loading) {
+    return <h1>LOADING...</h1>;
+  }
   return (
+    <>
+    {console.log(data)}
     <List>
-      {chats.map((chat) => (
+      {data.getChats.map((chat: any) => (
         <ChatItem key={chat.id} chat={chat} />
       ))}
     </List>
+    </>
   );
 }
 

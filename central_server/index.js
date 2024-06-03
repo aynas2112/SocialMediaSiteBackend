@@ -2,7 +2,8 @@ import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
 import dotenv from "dotenv";
-import chatRoutes from "./routes/chat.js";
+import userRoutes from "./routes/user.js";
+// import chatRoutes from "./routes/chat.js";
 
 const app = express();
 dotenv.config();
@@ -25,7 +26,8 @@ app.get("/", (req, res) => {
   res.send("Hello to Social Media Site Backend");
 });
 
-app.use("/chats",chatRoutes);
+app.use("/user",userRoutes);
+// app.use("/chats",chatRoutes);
 
 app.listen(PORT, () => 
     console.log(`Server up and running on port: ${PORT}`)

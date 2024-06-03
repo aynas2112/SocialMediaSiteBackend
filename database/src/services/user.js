@@ -21,10 +21,11 @@ class UserService {
         });
     }
 
-    static getUserByEmail(email) {
+    static getUser(payload){
+        const {email} = payload;
         return prismaClient.user.findUnique({
-            where: {
-                email
+            where:{
+                email:email
             }
         });
     }

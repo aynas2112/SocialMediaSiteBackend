@@ -6,6 +6,11 @@ const queries = {
     const res = await UserService.getUserToken(payload);
     return res;
   },
+  getUser: async(_,payload)=>{
+    const res = await UserService.getUser(payload);
+    return res;
+  }
+
 };
 
 

@@ -13,10 +13,16 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@apollo/client": "^3.10.4",
+    "apollo-boost": "^0.4.9",
     "body-parser": "^1.20.2",
     "cors": "^2.8.5",
+    "cross-fetch": "^4.0.0",
     "dotenv": "^16.4.5",
-    "express": "^4.19.2"
+    "express": "^4.19.2",
+    "graphql": "^16.8.1",
+    "graphql-tag": "^2.12.6",
+    "pg": "^8.11.5"
   },
   "devDependencies": {
     "nodemon": "^3.1.2"
