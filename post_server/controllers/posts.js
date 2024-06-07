@@ -1,10 +1,11 @@
-// import pool from "../models/db.js";
-// const client = await pool.connect()
+import pool from "../models/db.js";
+const client = await pool.connect()
 import dotenv from "dotenv";
 dotenv.config();
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import {Readable} from "stream";
 import {Upload} from "@aws-sdk/lib-storage";
+import jwt from "jsonwebtoken";
 
 // use JWT to increase 'following' of the request sender
 
@@ -19,7 +20,21 @@ const s3Client = new S3Client({
 export const createPost = async (req, res) => {
   console.log(req.body);
   const { title, content } = req.body;
-  // const userId = req.user.uid; // Assuming you have middleware that sets req.user
+  const authHeader = req.headers['authorization'];
+  if (!authHeader) {
+    return res.status(401).send('Authorization header is missing');
+  }
+  const token = authHeader.split(' ')[1];
+  if (!token) {
+    return res.status(401).send('JWT is missing');
+  }
+  let userId;
+  try {
+    const decoded = jwt.decode(token);
+    userId = decoded.user_id; // Adjust this according to your JWT payload structure
+  } catch (err) {
+    return res.status(403).send('Invalid JWT');
+  }
 
   // File upload logic
   if (!req.file) {
@@ -29,7 +44,7 @@ export const createPost = async (req, res) => {
 
   const params = {
     Bucket: 'postsbucket1',
-    Key: req.file.originalname,
+    Key: `${userId}/${req.file.originalname}`,
     Body: fileStream,
   };
 
@@ -46,10 +61,10 @@ export const createPost = async (req, res) => {
     // ------------------ MAKE META DATA ------------------
 
     // Insert post data into the database
-    // const result = await pool.query(
-    //   'INSERT INTO posts (user_id, title, content, file_url) VALUES ($1, $2, $3, $4) RETURNING *',
-    //   [userId, title, content, `https://${params.Bucket}.s3.amazonaws.com/${params.Key}`]
-    // );
+    const result = await pool.query(
+      'INSERT INTO posts_metadata (user_id, title, content, file_url) VALUES ($1, $2, $3, $4) RETURNING *',
+      [userId, title, content, `https://${params.Bucket}.s3.amazonaws.com/${params.Key}`]
+    );
 
     res.status(200).send('Post created successfully');
   } catch (err) {
