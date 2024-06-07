@@ -1,10 +1,11 @@
-import pool from "../models/db.js";
-const client = await pool.connect()
+// import pool from "../models/db.js";
+// const client = await pool.connect()
+import dotenv from "dotenv";
+dotenv.config();
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-// import dotenv from "dotenv";
-// dotenv.config();
+import {Readable} from "stream";
+import {Upload} from "@aws-sdk/lib-storage";
 
-improt {Readable} from "stream";
 // use JWT to increase 'following' of the request sender
 
 const s3Client = new S3Client({
@@ -16,21 +17,30 @@ const s3Client = new S3Client({
 });
 
 export const createPost = async (req, res) => {
+  console.log(req.body);
   const { title, content } = req.body;
-  const userId = req.user.id; // Assuming you have middleware that sets req.user
+  // const userId = req.user.uid; // Assuming you have middleware that sets req.user
 
   // File upload logic
+  if (!req.file) {
+    return res.status(400).send('File is required');
+  }
   const fileStream = Readable.from(req.file.buffer);
 
   const params = {
-    Bucket: 'YOUR_S3_BUCKET_NAME',
+    Bucket: 'postsbucket1',
     Key: req.file.originalname,
     Body: fileStream,
   };
 
   try {
     // Upload the file to S3
-    await s3Client.send(new PutObjectCommand(params));
+    const upload = new Upload({
+      client: s3Client,
+      params: params,
+    });
+
+    await upload.done();
     console.log('File uploaded successfully');
 
     // ------------------ MAKE META DATA ------------------

@@ -15,6 +15,7 @@
   "dependencies": {
     "@apollo/client": "^3.10.4",
     "@aws-sdk/client-s3": "^3.588.0",
+    "@aws-sdk/lib-storage": "^3.592.0",
     "apollo-boost": "^0.4.9",
     "body-parser": "^1.20.2",
     "cors": "^2.8.5",

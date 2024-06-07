@@ -1,9 +1,11 @@
 import express from "express";
-import {createPost} from "../controllers/post.js";
-// import auth from "../middleware/auth.js";
-const router = express.Router();
 import multer from "multer";
-const upload = multer({ dest: 'uploads/' });
+import { createPost } from "../controllers/posts.js";
+// import auth from "../middleware/auth.js";
+
+const router = express.Router();
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage});
 
 // router.get('/:email', getUserProfile);
 router.post('/',upload.single('file'), createPost);
