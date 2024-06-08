@@ -58,8 +58,33 @@ export const signin = async (req, res) => {
     email,
     displayName,
     photoURL,
-    token
+    token,
   };
-  // Respond to the client
+  const [first_name, last_name] = displayName.split(' ');
+  const insertQuery = `
+  INSERT INTO user_details (user_id, username, email, password, f_name, l_name, bio, profile_picture_url, website_url, location, birth_date, posts, followers, following)
+  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+  RETURNING *;`;
+
+  const values = [
+    uid, // user_id
+    uid, // username
+    email, // email
+    "google_authenticated", // password
+    first_name, // f_name
+    last_name, // l_name
+    `Hi, I am ${first_name}`, // bio
+    null, // profile_picture_url
+    null, // website_url
+    null, // location
+    null, // birth_date
+    null, //posts
+    null, // followers
+    null, // following
+  ];
+
+  const result = await pool.query(
+    insertQuery,values
+  );
   res.status(200).json(userInfo);
 };
