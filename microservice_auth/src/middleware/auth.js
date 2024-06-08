@@ -1,7 +1,7 @@
 const { verifyToken } = require('../utils/jwt');
 
 const authenticate = (req, res, next) => {
-  console.log("middleware auth microservice:\n",req.body);
+  console.log("middleware auth microservice:\n");
   const authHeader = req.headers.authorization;
 
   if (!authHeader) {

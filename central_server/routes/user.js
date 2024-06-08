@@ -5,7 +5,7 @@ const router = express.Router();
 
 // router.get('/:email', getUserProfile);
 // router.get('/:id', getUser);
-router.patch('/:id/follow', followUser);
+router.patch('/:id/follow', auth, followUser);
 router.get('/test', auth, testUser);
 router.post('/signin', auth, signin);
 // router.post('/new', auth, createPost);
