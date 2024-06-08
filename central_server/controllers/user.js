@@ -8,7 +8,7 @@ export const getUser = async (req, res) => {
   const userId = String(id);
   try {
     // Update the number of followers for the user with the provided ID
-    const result = await client.query(`SELECT * FROM user_info WHERE id = $1`, [
+    const result = await client.query(`SELECT * FROM user_details WHERE id = $1`, [
       userId,
     ]);
 
@@ -29,7 +29,7 @@ export const followUser = async (req, res) => {
   try {
     // Update the number of followers for the user with the provided ID
     const result = await client.query(
-      `UPDATE user_info SET followers = followers + 1 WHERE id = $1`,
+      `UPDATE user_details SET followers = followers + 1 WHERE id = $1`,
       [userId]
     );
 
@@ -78,7 +78,6 @@ export const signin = async (req, res) => {
     null, // website_url
     null, // location
     null, // birth_date
-    null, //posts
     null, // followers
     null, // following
   ];
