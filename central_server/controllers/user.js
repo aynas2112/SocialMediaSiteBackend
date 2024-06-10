@@ -1,6 +1,30 @@
 import pool from "../models/db.js";
 const client = await pool.connect();
+import dotenv from "dotenv";
+dotenv.config();
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import {Readable} from "stream";
+import {Upload} from "@aws-sdk/lib-storage";
+import jwt from "jsonwebtoken";
+import fs from 'fs';
+import util from 'util';
+import { fileURLToPath } from 'url';
+import path from 'path';
 
+// Define __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const readFile = util.promisify(fs.readFile);
+
+// use JWT to increase 'following' of the request sender
+
+const s3Client = new S3Client({
+  region: 'ap-south-1',
+  credentials: {
+    accessKeyId: process.env.ACCESS_KEY_ID,
+    secretAccessKey: process.env.ACCESS_KEY_SECRET,
+  },
+});
 // use JWT to increase 'following' of the request sender
 
 export const getUser = async (req, res) => {
@@ -90,4 +114,60 @@ export const signin = async (req, res) => {
     insertQuery,values
   );
   res.status(200).json(userInfo);
+};
+
+export const updateProfile = async (req,res) =>{
+  console.log('started');
+  const authHeader = req.headers['authorization'];
+  if (!authHeader) {
+    return res.status(401).send('Authorization header is missing');
+  }
+  const token = authHeader.split(' ')[1];
+  if (!token) {
+    return res.status(401).send('JWT is missing');
+  }
+  let userId;
+  try {
+    const decoded = jwt.decode(token);
+    userId = decoded.user_id; // Adjust this according to your JWT payload structure
+  } catch (err) {
+    return res.status(403).send('Invalid JWT');
+  }
+
+  if (!req.file) {
+    console.log("NO FILES");
+    return res.status(400).send('File is required');
+  }
+  console.log("req.file.filename:\t",req.file.filename);
+  const filePath = path.join(__dirname, '..', 'public', 'images', 'uploads', req.file.filename);
+  const fileBuffer = await readFile(filePath);
+  const fileStream = Readable.from(fileBuffer);
+  const params = {
+    Bucket: 'postsbucket1',
+    Key: `${userId}/profile/${req.file.originalname}`,
+    Body: fileStream,
+  };
+  try {
+    // Upload the file to S3
+    const upload = new Upload({
+      client: s3Client,
+      params: params,
+    });
+
+    await upload.done();
+    console.log('File uploaded successfully');
+
+    // ------------------ MAKE META DATA ------------------
+
+    // Insert post data into the database
+    const result = await pool.query(
+      'UPDATE user_details SET profile_picture_url = $1 WHERE user_id = $2 RETURNING *',
+      [`https://${params.Bucket}.s3.amazonaws.com/${params.Key}`,userId]
+    );
+
+    res.status(200).json({message:'PFP updated successfully'});
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Failed to update profile picture');
+  }
 };
