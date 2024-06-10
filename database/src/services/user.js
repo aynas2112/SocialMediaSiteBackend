@@ -30,6 +30,15 @@ class UserService {
         });
     }
 
+    static getProfile(payload){
+        const {id} = payload;
+        return prismaClient.UserInfo.findUnique({
+            where:{
+                user_id: id
+            }
+        })
+    }
+
     static async getUserToken(payload) {
         const { email, password } = payload;
         const user = await this.getUserByEmail(email);

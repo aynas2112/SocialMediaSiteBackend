@@ -11,4 +11,8 @@ const verifyToken = (token) => {
   }
 };
 
-module.exports = { verifyToken };
+const signToken = (payload)=>{
+  return jwt.sign(payload,JWT_SECRET,{expiresIn:'1h'});
+}
+
+module.exports = { signToken,verifyToken };

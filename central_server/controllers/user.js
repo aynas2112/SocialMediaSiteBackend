@@ -3,13 +3,13 @@ const client = await pool.connect();
 import dotenv from "dotenv";
 dotenv.config();
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-import {Readable} from "stream";
-import {Upload} from "@aws-sdk/lib-storage";
+import { Readable } from "stream";
+import { Upload } from "@aws-sdk/lib-storage";
 import jwt from "jsonwebtoken";
-import fs from 'fs';
-import util from 'util';
-import { fileURLToPath } from 'url';
-import path from 'path';
+import fs from "fs";
+import util from "util";
+import { fileURLToPath } from "url";
+import path from "path";
 
 // Define __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -19,7 +19,7 @@ const readFile = util.promisify(fs.readFile);
 // use JWT to increase 'following' of the request sender
 
 const s3Client = new S3Client({
-  region: 'ap-south-1',
+  region: "ap-south-1",
   credentials: {
     accessKeyId: process.env.ACCESS_KEY_ID,
     secretAccessKey: process.env.ACCESS_KEY_SECRET,
@@ -32,9 +32,10 @@ export const getUser = async (req, res) => {
   const userId = String(id);
   try {
     // Update the number of followers for the user with the provided ID
-    const result = await client.query(`SELECT * FROM user_details WHERE id = $1`, [
-      userId,
-    ]);
+    const result = await client.query(
+      `SELECT * FROM user_details WHERE id = $1`,
+      [userId]
+    );
 
     if (result.rowCount === 0) {
       return res.status(404).send("User not found");
@@ -50,7 +51,7 @@ export const getUser = async (req, res) => {
 export const followUser = async (req, res) => {
   const { id } = req.params;
   const targetUserId = String(id);
-  const {user_id }= req.user;
+  const { user_id } = req.user;
   try {
     // Update the number of followers for the user with the provided ID
     const followersResult = await client.query(
@@ -62,9 +63,9 @@ export const followUser = async (req, res) => {
       [targetUserId, userId]
     );
     if (followingResult.rowCount === 0 || followersResult.rowCount === 0) {
-      res.status(404).json({ message: 'User not found' });
+      res.status(404).json({ message: "User not found" });
     } else {
-      res.status(200).json({ message: 'Follow operation successful' });
+      res.status(200).json({ message: "Follow operation successful" });
     }
   } catch (error) {
     console.error("Error updating followers:", error);
@@ -88,7 +89,7 @@ export const signin = async (req, res) => {
     photoURL,
     token,
   };
-  const [first_name, last_name] = displayName.split(' ');
+  const [first_name, last_name] = displayName.split(" ");
   const insertQuery = `
   INSERT INTO user_details (user_id, username, email, password, f_name, l_name, bio, profile_picture_url, website_url, location, birth_date, followers, following)
   VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
@@ -110,40 +111,66 @@ export const signin = async (req, res) => {
     null, // following
   ];
 
-  const result = await pool.query(
-    insertQuery,values
-  );
+  const result = await pool.query(insertQuery, values);
   res.status(200).json(userInfo);
 };
 
-export const updateProfile = async (req,res) =>{
-  console.log('started');
-  const authHeader = req.headers['authorization'];
-  if (!authHeader) {
-    return res.status(401).send('Authorization header is missing');
+export const updateProfile = async (req, res) => {
+  const user_id = req.user.user_id;
+  const { username, name, bio } = req.body;
+  const [first_name, last_name] = name.split(" ");
+  try{
+    const result = await pool.query(
+      "UPDATE user_details SET username = $1, f_name = $2, l_name = $3, bio = $4 WHERE user_id = $5 RETURNING *",
+      [username, first_name,last_name,bio, user_id] 
+    );
+    if (result.rowCount>0){
+      console.log("update successful");
+    }else{
+      console.log("update failed");
+    }
+    res.status(200).json({ message: "Profike updated successfully" });
+  }catch(err){
+    console.error(err);
+    res.status(500).send("some fucking error");
   }
-  const token = authHeader.split(' ')[1];
+};
+
+export const updateProfilePic = async (req, res) => {
+  console.log("started");
+  const authHeader = req.headers["authorization"];
+  if (!authHeader) {
+    return res.status(401).send("Authorization header is missing");
+  }
+  const token = authHeader.split(" ")[1];
   if (!token) {
-    return res.status(401).send('JWT is missing');
+    return res.status(401).send("JWT is missing");
   }
   let userId;
   try {
     const decoded = jwt.decode(token);
     userId = decoded.user_id; // Adjust this according to your JWT payload structure
   } catch (err) {
-    return res.status(403).send('Invalid JWT');
+    return res.status(403).send("Invalid JWT");
   }
 
   if (!req.file) {
     console.log("NO FILES");
-    return res.status(400).send('File is required');
+    return res.status(400).send("File is required");
   }
-  console.log("req.file.filename:\t",req.file.filename);
-  const filePath = path.join(__dirname, '..', 'public', 'images', 'uploads', req.file.filename);
+  console.log("req.file.filename:\t", req.file.filename);
+  const filePath = path.join(
+    __dirname,
+    "..",
+    "public",
+    "images",
+    "uploads",
+    req.file.filename
+  );
   const fileBuffer = await readFile(filePath);
   const fileStream = Readable.from(fileBuffer);
   const params = {
-    Bucket: 'postsbucket1',
+    Bucket: "postsbucket1",
     Key: `${userId}/profile/${req.file.originalname}`,
     Body: fileStream,
   };
@@ -155,19 +182,19 @@ export const updateProfile = async (req,res) =>{
     });
 
     await upload.done();
-    console.log('File uploaded successfully');
+    console.log("File uploaded successfully");
 
     // ------------------ MAKE META DATA ------------------
 
     // Insert post data into the database
     const result = await pool.query(
-      'UPDATE user_details SET profile_picture_url = $1 WHERE user_id = $2 RETURNING *',
-      [`https://${params.Bucket}.s3.amazonaws.com/${params.Key}`,userId]
+      "UPDATE user_details SET profile_picture_url = $1 WHERE user_id = $2 RETURNING *",
+      [`https://${params.Bucket}.s3.amazonaws.com/${params.Key}`, userId]
     );
 
-    res.status(200).json({message:'PFP updated successfully'});
+    res.status(200).json({ message: "PFP updated successfully" });
   } catch (err) {
     console.error(err);
-    res.status(500).send('Failed to update profile picture');
+    res.status(500).send("Failed to update profile picture");
   }
 };

@@ -1,9 +1,16 @@
 export const typeDefs = `#graphql
   type User {
-    id: ID!
+    id: String!
+    username: String!
     fname: String!
-    lname: String!
+    lname: String
     email: String!
-    profileImageUrl: String
+    bio: String!
+    profileImageUrl: String 
+    website_url: String
+    location: String
+    birth_date: String
+    followers: [String]
+    following: [String]
   }
 `;

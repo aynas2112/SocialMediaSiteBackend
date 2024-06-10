@@ -9,6 +9,13 @@ const queries = {
   getUser: async(_,payload)=>{
     const res = await UserService.getUser(payload);
     return res;
+  },
+  getProfile: async(_,payload)=>{
+    const res = await UserService.getProfile(payload);
+    return {
+      ...res,
+      fname: res.f_name,
+    };
   }
 
 };
