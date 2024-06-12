@@ -4,7 +4,7 @@ const { Pool } = pg
 // Create a new pool instance to manage connections
 const pool = new Pool({
   user: process.env.PGUSER || 'akshats911',
-  host: process.env.PGHOST || 'localhost',
+  host: process.env.PGHOST || '13.127.0.176',
   database: process.env.PGDATABASE || 'users',
   password: process.env.PGPASSWORD || 'Tacmpp@123',
   port: 5431,

@@ -75,7 +75,10 @@ export const followUser = async (req, res) => {
 };
 
 export const testUser = async (req, res) => {
-  console.log("yahan aagya");
+  const result = await pool.query(
+    "SELECT * FROM test_table "
+  );
+  res.status(200).send(result.rows);
 };
 
 export const signin = async (req, res) => {
