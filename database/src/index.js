@@ -4,9 +4,9 @@ import { expressMiddleware } from "@apollo/server/express4";
 import createApolloGraphQLServer from "./graphql/index.js";
 
 async function init() {
+  console.log("halo");
   const app = express();
   const port = 5000;
-
   app.use(cors({origin: true, credentials: true}));
   app.use(function(req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");

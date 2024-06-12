@@ -15,8 +15,9 @@ const queries = {
     return {
       ...res,
       fname: res.f_name,
+      profileImageUrl: res.profile_picture_url
     };
-  }
+  },
 
 };
 

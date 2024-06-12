@@ -51,6 +51,7 @@ export const getUser = async (req, res) => {
 export const followUser = async (req, res) => {
   const { id } = req.params;
   const targetUserId = String(id);
+  console.log(req.body);
   const { user_id } = req.user;
   try {
     // Update the number of followers for the user with the provided ID
@@ -60,7 +61,7 @@ export const followUser = async (req, res) => {
     );
     const followingResult = await client.query(
       `UPDATE user_details SET following = array_append(following, $1) WHERE user_id = $2`,
-      [targetUserId, userId]
+      [targetUserId, user_id]
     );
     if (followingResult.rowCount === 0 || followersResult.rowCount === 0) {
       res.status(404).json({ message: "User not found" });
@@ -78,59 +79,71 @@ export const testUser = async (req, res) => {
 };
 
 export const signin = async (req, res) => {
-  console.log("in backend");
+  // console.log("in backend");
   // console.log(req.body);
-  const { user, token } = req.body;
-  const { uid, email, displayName, photoURL } = user;
-  const userInfo = {
-    uid,
-    email,
-    displayName,
-    photoURL,
-    token,
-  };
-  const [first_name, last_name] = displayName.split(" ");
-  const insertQuery = `
+  const user_id = req.user.user_id;
+
+  const result = await pool.query(
+    "SELECT 1 FROM user_details WHERE user_id = $1 LIMIT 1",
+    [user_id]
+  );
+  if (result.rowCount > 0) {
+    console.log("already exists:");
+    res.status(200).json({ message: "Logged in", token: req.body.token });
+  } else {
+    const { user, token } = req.body;
+    console.log(user);
+    const { uid, email, displayName, photoURL } = user;
+    const userInfo = {
+      uid,
+      email,
+      displayName,
+      photoURL,
+      token,
+    };
+    const [first_name, last_name] = displayName.split(" ");
+    const insertQuery = `
   INSERT INTO user_details (user_id, username, email, password, f_name, l_name, bio, profile_picture_url, website_url, location, birth_date, followers, following)
   VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
   RETURNING *;`;
 
-  const values = [
-    uid, // user_id
-    uid, // username
-    email, // email
-    "google_authenticated", // password
-    first_name, // f_name
-    last_name, // l_name
-    `Hi, I am ${first_name}`, // bio
-    null, // profile_picture_url
-    null, // website_url
-    null, // location
-    null, // birth_date
-    null, // followers
-    null, // following
-  ];
+    const values = [
+      uid, // user_id
+      uid, // username
+      email, // email
+      "google_authenticated", // password
+      first_name, // f_name
+      last_name, // l_name
+      `Hi, I am ${first_name}`, // bio
+      photoURL, // profile_picture_url
+      null, // website_url
+      null, // location
+      null, // birth_date
+      null, // followers
+      null, // following
+    ];
 
-  const result = await pool.query(insertQuery, values);
-  res.status(200).json(userInfo);
+    const result = await pool.query(insertQuery, values);
+    res.status(200).json(userInfo);
+  }
 };
 
 export const updateProfile = async (req, res) => {
   const user_id = req.user.user_id;
   const { username, name, bio } = req.body;
   const [first_name, last_name] = name.split(" ");
-  try{
+  try {
     const result = await pool.query(
       "UPDATE user_details SET username = $1, f_name = $2, l_name = $3, bio = $4 WHERE user_id = $5 RETURNING *",
-      [username, first_name,last_name,bio, user_id] 
+      [username, first_name, last_name, bio, user_id]
     );
-    if (result.rowCount>0){
+    if (result.rowCount > 0) {
       console.log("update successful");
-    }else{
+    } else {
       console.log("update failed");
     }
     res.status(200).json({ message: "Profike updated successfully" });
-  }catch(err){
+  } catch (err) {
     console.error(err);
     res.status(500).send("some fucking error");
   }
@@ -197,4 +210,71 @@ export const updateProfilePic = async (req, res) => {
     console.error(err);
     res.status(500).send("Failed to update profile picture");
   }
+};
+
+export const getFeed = async (req, res) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader.split(" ")[1];
+  let userId;
+  try {
+    const decoded = jwt.decode(token);
+    userId = decoded.user_id; // Adjust this according to your JWT payload structure
+  } catch (err) {
+    return res.status(403).send("Invalid JWT");
+  }
+  const result = await pool.query(
+    "SELECT following FROM user_details WHERE user_id = $1",
+    [userId]
+  );
+  if (result.rows.length === 0) {
+    res.status(404).json({ message: "User not found" });
+  }
+
+  const followingIds = result.rows[0].following;
+  const combinedResult = await pool.query(
+    `
+    SELECT 
+      u.user_id,
+      u.f_name,
+      u.profile_picture_url,
+      p.id,
+      p.content,
+      p.created_at
+    FROM 
+      user_details u
+    LEFT JOIN 
+      posts_metadata p 
+    ON 
+      u.user_id = p.user_id
+    WHERE 
+      u.user_id = ANY($1::text[])
+  `,
+    [followingIds]
+  );
+
+  const userMap = {};
+
+  combinedResult.rows.forEach((row) => {
+    if (!userMap[row.user_id]) {
+      userMap[row.user_id] = {
+        user_id: row.user_id,
+        f_name: row.f_name,
+        profile_picture_url: row.profile_picture_url,
+        posts: [],
+      };
+    }
+
+    if (row.id) {
+      userMap[row.user_id].posts.push({
+        post_id: row.id,
+        content: row.content,
+        created_at: row.created_at,
+      });
+    }
+  });
+
+  const data = Object.values(userMap);
+
+  res.status(200).json({ data });
+  // console.log(result);
 };
